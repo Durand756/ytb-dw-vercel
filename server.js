@@ -1,6 +1,11 @@
-const express = require('express');
-const ytdl = require('@distube/ytdl-core');
-const path = require('path');
+import express from 'express';
+import ytdl from '@distube/ytdl-core';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Configuration ES6 pour __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration pour éviter les erreurs de mise à jour
 process.env.YTDL_NO_UPDATE = 'true';
@@ -233,7 +238,7 @@ if (!process.env.VERCEL) {
 
 // Export pour Vercel ou démarrage serveur pour local
 if (process.env.VERCEL) {
-    module.exports = app;
+    export default app;
 } else {
     // Démarrage du serveur pour développement local
     const PORT = process.env.PORT || 3000;
