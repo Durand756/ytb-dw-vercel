@@ -1,0 +1,255 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Téléchargeur YouTube</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="url"]:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Téléchargeur YouTube</h1>
+        
+        <form id="downloadForm">
+            <div class="input-group">
+                <input 
+                    type="url" 
+                    id="youtubeUrl" 
+                    placeholder="Collez l'URL de la vidéo YouTube ici..." 
+                    required
+                >
+            </div>
+            
+            <button type="submit" id="downloadBtn">
+                Télécharger la vidéo
+            </button>
+        </form>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('downloadForm');
+        const urlInput = document.getElementById('youtubeUrl');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const status = document.getElementById('status');
+
+        function showStatus(message, type) {
+            status.className = \`status \${type}\`;
+            status.innerHTML = message;
+            status.style.display = 'block';
+        }
+
+        function hideStatus() {
+            status.style.display = 'none';
+        }
+
+        function setLoading(loading) {
+            downloadBtn.disabled = loading;
+            if (loading) {
+                downloadBtn.innerHTML = '<span class="spinner"></span>Téléchargement...';
+            } else {
+                downloadBtn.innerHTML = 'Télécharger la vidéo';
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                showStatus('Veuillez entrer une URL YouTube valide.', 'error');
+                return;
+            }
+
+            // Validation basique de l'URL YouTube
+            const youtubeRegex = /^(https?:\\/\\/)?(www\\.)?(youtube\\.com|youtu\\.be)\\/.+/;
+            if (!youtubeRegex.test(url)) {
+                showStatus('L\\'URL saisie ne semble pas être une URL YouTube valide.', 'error');
+                return;
+            }
+
+            hideStatus();
+            setLoading(true);
+
+            try {
+                showStatus('Connexion au serveur...', 'info');
+                
+                // Créer l'URL de téléchargement (Vercel API)
+                const downloadUrl = \`/api/download?url=\${encodeURIComponent(url)}\`;
+                
+                // Effectuer la requête
+                const response = await fetch(downloadUrl);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || \`Erreur HTTP: \${response.status}\`);
+                }
+
+                showStatus('Préparation du téléchargement...', 'info');
+                
+                // Créer un blob à partir de la réponse
+                const blob = await response.blob();
+                
+                // Créer un lien temporaire pour déclencher le téléchargement
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = 'video.mp4';
+                
+                // Déclencher le téléchargement
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                // Libérer la mémoire
+                URL.revokeObjectURL(downloadLink.href);
+                
+                showStatus('✅ Téléchargement démarré avec succès !', 'success');
+                
+            } catch (error) {
+                console.error('Erreur lors du téléchargement:', error);
+                showStatus(\`❌ Erreur: \${error.message}\`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Nettoyer le statut quand l'utilisateur tape dans le champ
+        urlInput.addEventListener('input', () => {
+            hideStatus();
+        });
+    </script>
+</body>
+</html>`;
+
+export default function handler(req, res) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.status(200).send(html);
+}
