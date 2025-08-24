@@ -1,4 +1,4 @@
-const ytdl = require('@distube/ytdl-core');
+import ytdl from '@distube/ytdl-core';
 
 // Configuration pour éviter les erreurs de mise à jour
 process.env.YTDL_NO_UPDATE = 'true';
