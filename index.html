@@ -194,8 +194,8 @@
             try {
                 showStatus('Connexion au serveur...', 'info');
                 
-                // Créer l'URL de téléchargement
-                const downloadUrl = `/download?url=${encodeURIComponent(url)}`;
+                // Créer l'URL de téléchargement (Vercel API)
+                const downloadUrl = `/api/download?url=${encodeURIComponent(url)}`;
                 
                 // Effectuer la requête
                 const response = await fetch(downloadUrl);
