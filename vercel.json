@@ -1,22 +1,8 @@
 {
   "version": 2,
   "functions": {
-    "server.js": {
+    "api/download.js": {
       "maxDuration": 60
     }
-  },
-  "routes": [
-    {
-      "src": "/",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/download",
-      "dest": "/server.js"
-    },
-    {
-      "src": "/health",
-      "dest": "/server.js"
-    }
-  ]
+  }
 }
